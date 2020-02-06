@@ -8,9 +8,10 @@ const (
 
 // app search 请求参数
 type Search struct {
-	Type string // 仓库类型 nexus/harbor/dockerHub 默认dockerHub
-	Url  string // 仓库地址 http://username:password@repository
-	Name string // 要搜索的镜像名称
+	Type    string // 仓库类型 nexus/harbor/dockerHub 默认dockerHub
+	Url     string // 仓库地址 http://username:password@repository
+	Name    string // 要搜索的镜像名称
+	Version string // 指定过滤版本
 }
 
 // app release 请求参数
@@ -20,6 +21,9 @@ type Release struct {
 	TemplatePath string // 模板文件路径
 	ReleasePath  string // 生成yam路径
 	Apply        bool   // 是否自动执行kubectl apply -f
+	Version      string // 指定过滤版本
+	Prefix       string // 镜像地址前半部分 + 后半部分来源于文件名
+	Domain       string // 指定生成镜像的域名
 }
 
 // dockerHub Response Tags
