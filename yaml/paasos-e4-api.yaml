@@ -1,0 +1,55 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: name
+  namespace: moebius-system
+  labels:
+    app: name
+    version: v1.9.0
+  annotations:
+spec:
+  ports:
+    - name: name
+      port: 8080
+      protocol: TCP
+      targetPort: 8080
+  selector:
+    app: name
+    version: v1.9.0
+  type: ClusterIP
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: moebius-system
+  name: name
+  labels:
+    app: name
+    version: v1.9.0
+spec:
+  replicas: paasos-e4-api.yaml
+  selector:
+    matchLabels:
+      app: name
+      version: v1.9.0
+  template:
+    metadata:
+      labels:
+        app: name
+        version: v1.9.0
+    spec:
+      containers:
+        - image: {{image}}
+          env:
+            - name: CONFIG_SERVER
+              value: CONFIG_SERVER
+            - name: ENV
+              value: ENV
+          imagePullPolicy: 'Always'
+          name: name
+          ports:
+            - containerPort: 8080
+      imagePullSecrets:
+        - name: myregistrykey

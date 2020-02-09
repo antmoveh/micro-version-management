@@ -5,12 +5,13 @@ import (
 	"fmt"
 	"github.com/antmoveh/micro-version-management/pkg/models"
 	"github.com/antmoveh/micro-version-management/pkg/repository"
+	"github.com/antmoveh/micro-version-management/pkg/utils"
 	"github.com/urfave/cli"
 	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
-	"strconv"
 	"strings"
 )
 
@@ -67,7 +68,7 @@ var releaseCommand = cli.Command{
 		},
 		cli.StringFlag{
 			Name:  "url",
-			Usage: "镜像仓库地址",
+			Usage: "镜像仓库门户页地址: http://username:password@repository.xxx.com:8081",
 		},
 		cli.StringFlag{
 			Name:  "f",
@@ -166,6 +167,7 @@ func releaseYaml(releaseRequest *models.Release) {
 			imageNameList = append(imageNameList, imageName)
 			imagePathMap[imageName] = path
 		}
+		return nil
 
 	})
 	if err != nil {
@@ -183,9 +185,26 @@ func releaseYaml(releaseRequest *models.Release) {
 		if err != nil {
 			log.Fatal("镜像查询失败")
 		}
-		latest := QueryReleaseLatestVersion(it, releaseRequest.Version)
+		latestVersion := QueryReleaseLatestVersion(it, releaseRequest.Version)
+		if latestVersion != "" {
+			// 替换yaml中{{image}}并将yaml挪到指定位置
+			imageName := fmt.Sprintf("%s%s%s", releaseRequest.Domain, name, latestVersion)
+			err = utils.MoveYamlToReleaseDir(releaseRequest.TemplatePath, releaseRequest.ReleasePath, imageName, imagePathMap[name])
+			if err != nil {
+				log.Fatal("yaml迁移失败：" + err.Error())
+			}
+		}
 	}
-
+	if releaseRequest.Apply {
+		log.Println("此命令需要在kubernetes master节点执行")
+		log.Println(fmt.Sprintf("kubectl delete -f %s && kubectl apply -f %s", releaseRequest.ReleasePath, releaseRequest.ReleasePath))
+		cmd := exec.Command("kubectl", "delete", "-f", releaseRequest.ReleasePath, "&&", "kubectl", "apply", "-f", releaseRequest.ReleasePath)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		if err := cmd.Run(); err != nil {
+			log.Fatal("执行kubectl 命令失败：" + err.Error())
+		}
+	}
 }
 
 func SearchImage(searchRequest *models.Search) ([]*models.ImageTags, error) {
@@ -219,61 +238,18 @@ func QueryReleaseLatestVersion(it []*models.ImageTags, version string) string {
 		return ""
 	}
 
-	//latestImage := ""
-	prefixVersion := []int{}
-	suffixVersion := 0
+	latestImageTag := ""
 	for _, t := range it {
 		// 只处理符合v1.8.2-10 格式的数据
-		verify, _ := regexp.Match("^v(\\d+\\.?){2,3}-\\d+", []byte(t.ImageTag))
-		if !verify {
+		if verify, _ := regexp.Match("^v(\\d+\\.?){2,3}-\\d+", []byte(t.ImageTag)); !verify {
 			continue
 		}
-		if version != "" && strings.HasPrefix(t.ImageTag, version) {
-			n, err := strconv.Atoi(t.ImageTag[len(version):])
-			if err != nil && n > suffixVersion {
-				suffixVersion = n
-			}
-			continue
+		if version != "" && strings.HasPrefix(t.ImageTag, version+"-") {
+			latestImageTag = utils.VersionCompare(latestImageTag, t.ImageTag)
 		}
 		if version == "" {
-			tmpPrefixVersion := []int{}
-			x := strings.Split(t.ImageTag[1:], "-")
-			x1 := strings.Split(x[0], ".")
-
-			n, err := strconv.Atoi(x1[1])
-			if err != nil {
-				continue
-			}
-			tmpSuffixVersion := n
-
-			for _, x2 := range x1 {
-				n, err := strconv.Atoi(x2)
-				if err != nil {
-					tmpPrefixVersion = []int{}
-					break
-				}
-				tmpPrefixVersion = append(tmpPrefixVersion, n)
-			}
-			if len(tmpPrefixVersion) == 0 {
-				continue
-			}
-			// 大版本长度有为两位，有为三位的，先把两位的最后以为补充为-1方便比较
-			if len(tmpPrefixVersion) == 2 {
-				tmpPrefixVersion = append(tmpPrefixVersion, -1)
-			}
-			// 与现在的最新版本比较，替换最新版本
-			if len(prefixVersion) == 0 {
-				prefixVersion = tmpPrefixVersion
-				suffixVersion = tmpSuffixVersion
-				continue
-			}
-			if tmpPrefixVersion[0] > prefixVersion[0] {
-				prefixVersion = tmpPrefixVersion
-				suffixVersion = tmpSuffixVersion
-				continue
-			}
-
+			latestImageTag = utils.VersionCompare(latestImageTag, t.ImageTag)
 		}
 	}
-	return ""
+	return latestImageTag
 }
