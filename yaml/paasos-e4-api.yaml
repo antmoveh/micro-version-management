@@ -2,7 +2,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: name
-  namespace: moebius-system
+  namespace: mo-system
   labels:
     app: name
     version: v1.9.0
@@ -23,13 +23,13 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  namespace: moebius-system
+  namespace: mo-system
   name: name
   labels:
     app: name
     version: v1.9.0
 spec:
-  replicas: paasos-e4-api.yaml
+  replicas: 1
   selector:
     matchLabels:
       app: name
