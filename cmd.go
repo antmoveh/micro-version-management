@@ -141,6 +141,12 @@ func releaseYaml(releaseRequest *models.Release) {
 	if releaseRequest.ReleasePath == "" {
 		releaseRequest.ReleasePath = "/tmp/release"
 	}
+	if releaseRequest.Prefix != "" && !strings.HasSuffix(releaseRequest.Prefix, "/") {
+		releaseRequest.Prefix = releaseRequest.Prefix + "/"
+	}
+	if releaseRequest.Domain != "" && !strings.HasSuffix(releaseRequest.Domain, "/") {
+		releaseRequest.Domain = releaseRequest.Domain + "/"
+	}
 
 	_ = os.RemoveAll(releaseRequest.ReleasePath)
 	time.Sleep(1 * time.Second)
