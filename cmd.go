@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 )
 
 var searchCommand = cli.Command{
@@ -142,7 +143,7 @@ func releaseYaml(releaseRequest *models.Release) {
 	}
 
 	_ = os.RemoveAll(releaseRequest.ReleasePath)
-
+	time.Sleep(1 * time.Second)
 	err := os.MkdirAll(releaseRequest.ReleasePath, os.ModePerm)
 	if err != nil {
 		log.Fatal("创建release目录失败：" + err.Error())
@@ -161,9 +162,11 @@ func releaseYaml(releaseRequest *models.Release) {
 		if info.IsDir() {
 			return nil
 		}
+		log.Println("模板yaml：" + path)
 		if strings.HasSuffix(path, ".yaml") {
-			path1 := strings.Split(path[:len(path)-5], "/")
-			imageName := fmt.Sprintf("%s%s", releaseRequest.Prefix, path1[len(path1)-1])
+			path1 := strings.Replace(path, "\\", "/", -1)
+			path2 := strings.Split(path1[:len(path1)-5], "/")
+			imageName := fmt.Sprintf("%s%s", releaseRequest.Prefix, path2[len(path2)-1])
 			imageNameList = append(imageNameList, imageName)
 			imagePathMap[imageName] = path
 		}
@@ -181,6 +184,7 @@ func releaseYaml(releaseRequest *models.Release) {
 			Name:    name,
 			Version: releaseRequest.Version,
 		}
+		log.Println("搜索该镜像所有tag：" + searchRequest.Name)
 		it, err := SearchImage(searchRequest)
 		if err != nil {
 			log.Fatal("镜像查询失败")
@@ -188,7 +192,8 @@ func releaseYaml(releaseRequest *models.Release) {
 		latestVersion := QueryReleaseLatestVersion(it, releaseRequest.Version)
 		if latestVersion != "" {
 			// 替换yaml中{{image}}并将yaml挪到指定位置
-			imageName := fmt.Sprintf("%s%s%s", releaseRequest.Domain, name, latestVersion)
+			imageName := fmt.Sprintf("%s%s:%s", releaseRequest.Domain, name, latestVersion)
+			log.Println("最新镜像: " + imageName)
 			err = utils.MoveYamlToReleaseDir(releaseRequest.TemplatePath, releaseRequest.ReleasePath, imageName, imagePathMap[name])
 			if err != nil {
 				log.Fatal("yaml迁移失败：" + err.Error())
@@ -205,6 +210,7 @@ func releaseYaml(releaseRequest *models.Release) {
 			log.Fatal("执行kubectl 命令失败：" + err.Error())
 		}
 	}
+	log.Println("release命令执行完成，生成yaml文件目录：" + releaseRequest.ReleasePath)
 }
 
 func SearchImage(searchRequest *models.Search) ([]*models.ImageTags, error) {
@@ -234,6 +240,7 @@ func SearchImage(searchRequest *models.Search) ([]*models.ImageTags, error) {
 
 // 计算最新版本
 func QueryReleaseLatestVersion(it []*models.ImageTags, version string) string {
+	log.Println("计算最新镜像版本...")
 	if len(it) == 0 {
 		return ""
 	}

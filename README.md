@@ -45,4 +45,32 @@
 
   - 开始时，首先想到的是写一段shell脚本完成，可以随着思考的深入感觉逻辑复杂，使用shell脚本需要处理很多业务逻辑且依赖服务器安装jq库才能解析镜像tag列表，当然使用python编写简单快速，但是也是有个致命依赖项问题，需要你的服务器安装对应的python版本及安装python对应版本依赖包；最终决定使用golang实现功能，就像设想的一样编译成一个二进制文件，传入指定镜像仓库、大版本号，便生成最新版本的部署yaml，甚至于自动执行`kubectl apply -f ` 完成了升级部署动作
   
+##### 必需条件
+
+  - yaml文件名称必需为镜像名称
   
+##### 使用方法
+ 
+  - app search 搜索镜像所有tag列表
+    - -t 镜像仓库类型 nexus/harbor/dockerHub
+    - -url 镜像仓库管理页面地址 http://username:password@repository.xxx.com/
+    - -name 要搜索的镜像名称
+    - -v 指定过滤搜索tag版本
+    
+  - app release 生成release版本yaml文件
+    - -t 镜像仓库类型 nexus/harbor/dockerHub
+    - -url 镜像仓库管理页面地址 http://username:password@repository.xxx.com/
+    - -f 指定yaml模板路径,默认/tmp/template
+    - -o 指定生成yaml文件路径,默认/tmp/release
+    - -v 指定tag过滤版本
+    - --prefix 镜像搜索名称前缀，默认moebius/release
+    - --domain 生成镜像的域名，默认为空
+    
+##### 示例
+
+```cassandraql
+app release -t nexus -url http://repository.xxx.com/ -f E:\\template -o E:\\release --domain
+reposiory.xx.com:8001/ -v v1.9 --prefix moebius/release
+
+app search -t nexus -url http://repository.xxx.com/ -v v1.9 -name moebius/release/websie
+```

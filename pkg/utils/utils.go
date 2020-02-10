@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -9,7 +10,7 @@ import (
 )
 
 func VersionCompare(source, dst string) string {
-	// 版本号情况v1.paasos-e4-api.yaml.paasos-e4-api.yaml-78 v1.3-14 v1.2.0-paasos-e4-api.yaml
+	// 版本号情况v1.website.yaml.website.yaml-78 v1.3-14 v1.2.0-website.yaml
 	// 从这三类数据选出最后版本，从左到右依次比较
 	if source == "" {
 		_, _, _, _, err := disassembleVersion(dst)
@@ -67,7 +68,7 @@ func disassembleVersion(version string) (int, int, int, int, error) {
 
 // 将模板目录下的yaml文件迁移到release目录下
 func MoveYamlToReleaseDir(sourceDirPrefix, dstDirPrefix string, imageName string, yamlPath string) error {
-	log.Println("读取模板yaml文件")
+	log.Println("读取模板yaml文件: " + yamlPath)
 	b, err := ioutil.ReadFile(yamlPath)
 	if err != nil {
 		log.Println("读取模板yaml文件失败：" + err.Error())
@@ -76,13 +77,23 @@ func MoveYamlToReleaseDir(sourceDirPrefix, dstDirPrefix string, imageName string
 
 	s := string(b)
 	s1 := strings.Replace(s, "{{image}}", imageName, -1)
-	releaseFile := strings.Replace(yamlPath, sourceDirPrefix, dstDirPrefix, 1)
 
-	err = os.MkdirAll(releaseFile, os.ModePerm)
+	transitionSourceDirPrefix := strings.Replace(sourceDirPrefix, "\\\\", "\\", -1)
+	transitionDstDirPrefix := strings.Replace(dstDirPrefix, "\\\\", "\\", -1)
+	releaseFile := strings.Replace(yamlPath, transitionSourceDirPrefix, transitionDstDirPrefix, 1)
+
+	imagePath := strings.Split(imageName, "/")
+	filename := strings.Split(imagePath[len(imagePath)-1], ":")
+	filepath := strings.Replace(releaseFile, fmt.Sprintf("%s.yaml", filename[0]), "", 1)
+	_, err = os.Stat(filepath)
 	if err != nil {
-		log.Println("创建release yaml文件失败：" + err.Error())
-		return err
+		err = os.MkdirAll(filepath, os.ModePerm)
+		if err != nil {
+			log.Println("创建release yaml目录失败:" + err.Error())
+			return err
+		}
 	}
+	log.Println("生成yaml文件：" + releaseFile)
 	err = ioutil.WriteFile(releaseFile, []byte(s1), os.ModePerm)
 	if err != nil {
 		log.Println("yaml文件写入失败: " + err.Error())

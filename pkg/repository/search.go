@@ -14,7 +14,7 @@ import (
 )
 
 func DockerHubTags(searchRequest *models.Search) ([]*models.ImageTags, error) {
-	url := fmt.Sprintf("https://registry.hub.docker.com/v2/repositories/library/%s/tags?page_size=100&&page=paasos-e4-api.yaml", searchRequest.Name)
+	url := fmt.Sprintf("https://registry.hub.docker.com/v2/repositories/library/%s/tags?page_size=100&&page=website.yaml", searchRequest.Name)
 	resp, err := http.Get(url)
 	defer resp.Body.Close()
 	if err != nil {
