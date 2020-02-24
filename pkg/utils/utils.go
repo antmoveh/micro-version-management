@@ -10,7 +10,7 @@ import (
 )
 
 func VersionCompare(source, dst string) string {
-	// 版本号情况v1.website.yaml.website.yaml-78 v1.3-14 v1.2.0-website.yaml
+	// 版本号情况v1.10.0-78 v1.3-14 v1.2.0-4
 	// 从这三类数据选出最后版本，从左到右依次比较
 	if source == "" {
 		_, _, _, _, err := disassembleVersion(dst)

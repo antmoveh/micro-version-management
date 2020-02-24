@@ -73,5 +73,5 @@
 app release -t nexus -url http://repository.xxx.com/ -f E:\\template -o E:\\release --domain
 reposiory.xx.com:8001/ -v v1.9 --prefix moebius/release
 
-app search -t nexus -url http://repository.xxx.com/ -v v1.9 -name moebius/release/websie
+app search -t nexus -url http://repository.xxx.com/ -v v1.9 -name moebius/release/website
 ```
