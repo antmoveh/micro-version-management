@@ -129,6 +129,53 @@ var releaseCommand = cli.Command{
 	},
 }
 
+var pluginCommand = cli.Command{
+	Name:  "plugin",
+	Usage: "搜索website插件最新版本或展示执行版本下载地址, app plugin -url http://... -name 搜索指定名称 -v 搜索指定版本",
+	Flags: []cli.Flag{
+		cli.StringFlag{
+			Name:     "url",
+			Usage:    "镜像仓库地址",
+			Required: true,
+		},
+		cli.StringFlag{
+			Name:  "name",
+			Usage: "插件名称",
+		},
+		cli.StringFlag{
+			Name:  "v",
+			Usage: "指定插件版本",
+		},
+	},
+
+	Action: func(context *cli.Context) error {
+
+		searchRequest := &models.PluginSearch{
+			Url:     context.String("url"),
+			Name:    context.String("name"),
+			Version: context.String("v"),
+		}
+		printPluginDownloadUrl(searchRequest)
+		return nil
+	},
+}
+
+func printPluginDownloadUrl(searchRequest *models.PluginSearch) {
+	p, err := repository.PluginSearch(searchRequest)
+	if err != nil {
+		log.Fatal(err)
+	}
+	for _, pl := range p.Plugins {
+		if searchRequest.Name == "" {
+			downloadUrl := QueryPluginVersion(pl.Versions, searchRequest.Version)
+			fmt.Println(downloadUrl)
+		} else if searchRequest.Name == pl.Name {
+			downloadUrl := QueryPluginVersion(pl.Versions, searchRequest.Version)
+			fmt.Println(downloadUrl)
+		}
+	}
+}
+
 func printLatestImage(searchRequest *models.Search) {
 	f, err := os.Open(searchRequest.File)
 	if err != nil {
@@ -307,4 +354,27 @@ func QueryReleaseLatestVersion(it []*models.ImageTags, version string) string {
 		}
 	}
 	return latestImageTag
+}
+
+// 计算最新的插件版本
+func QueryPluginVersion(it []*models.PluginVersion, version string) string {
+	if len(it) == 0 {
+		return ""
+	}
+	latestImageTag := ""
+	downloadUrl := ""
+	for _, t := range it {
+		if version != "latest" && version != "" {
+			if t.Version == version {
+				return t.DownloadUrl
+			}
+		}
+		// 为了复用原先的计算最新版本逻辑，在此进行稍加变换
+		disposeTag := fmt.Sprintf("v%s", strings.Split(t.Version, "_")[0])
+		latestImageTag = utils.VersionCompare(latestImageTag, disposeTag)
+		if latestImageTag == disposeTag {
+			downloadUrl = t.DownloadUrl
+		}
+	}
+	return downloadUrl
 }

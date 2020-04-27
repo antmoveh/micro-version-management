@@ -67,6 +67,12 @@
     - -v 指定tag过滤版本
     - --prefix 镜像搜索名称前缀，默认moebius/release
     - --domain 生成镜像的域名，默认为空
+  
+  - app plugin 搜索插件最新版本下载地址
+    - -url 必填，指定插件列表
+    - -name  搜索指定插件
+    - -v 搜索指定版本
+    
     
 ##### 示例
 

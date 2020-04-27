@@ -146,3 +146,33 @@ func spiltLink(url string) (string, string, string) {
 		return c[0], c[1], b[0] + "//" + a[1]
 	}
 }
+
+func PluginSearch(searchRequest *models.PluginSearch) (*models.PluginList, error) {
+	tagUrl := searchRequest.Url
+
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{Transport: tr}
+
+	req, err := http.NewRequest("GET", tagUrl, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+
+	var tags models.PluginList
+
+	if err := json.Unmarshal(body, &tags); err != nil {
+		return nil, err
+	}
+
+	return &tags, nil
+}

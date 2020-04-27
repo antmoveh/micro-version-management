@@ -16,6 +16,7 @@ func main() {
 	app.Commands = []cli.Command{
 		searchCommand,
 		releaseCommand,
+		pluginCommand,
 	}
 
 	app.Before = func(context *cli.Context) error {
