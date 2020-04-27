@@ -12,6 +12,7 @@ type Search struct {
 	Url     string // 仓库地址 http://username:password@repository
 	Name    string // 要搜索的镜像名称
 	Version string // 指定过滤版本
+	File    string // 指定镜像名称文件
 }
 
 // app release 请求参数

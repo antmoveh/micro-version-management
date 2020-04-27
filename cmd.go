@@ -1,12 +1,14 @@
 package main
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
 	"github.com/antmoveh/micro-version-management/pkg/models"
 	"github.com/antmoveh/micro-version-management/pkg/repository"
 	"github.com/antmoveh/micro-version-management/pkg/utils"
 	"github.com/urfave/cli"
+	"io"
 	"log"
 	"os"
 	"os/exec"
@@ -18,7 +20,7 @@ import (
 
 var searchCommand = cli.Command{
 	Name:  "search",
-	Usage: "镜像仓库中搜索镜像Tag列表: app search -t nexus -url http://username:password/xxx -name imageName -v v1.3",
+	Usage: "镜像仓库中搜索镜像Tag列表: app search -t nexus -url http://username:password/xxx -name imageName -v v1.3 -f image_name_list.conf",
 	Flags: []cli.Flag{
 		cli.StringFlag{
 			Name:  "t",
@@ -31,11 +33,15 @@ var searchCommand = cli.Command{
 		cli.StringFlag{
 			Name:     "name",
 			Usage:    "镜像名称",
-			Required: true,
+			Required: false,
 		},
 		cli.StringFlag{
 			Name:  "v",
 			Usage: "指定过滤版本: v1.9",
+		},
+		cli.StringFlag{
+			Name:  "f",
+			Usage: "-f执行文件/搜索镜像最新版本",
 		},
 	},
 
@@ -46,11 +52,19 @@ var searchCommand = cli.Command{
 			Url:     context.String("url"),
 			Name:    context.String("name"),
 			Version: context.String("v"),
+			File:    context.String("f"),
 		}
 		if searchRequest.Type != "" && strings.ToLower(searchRequest.Type) != models.DockerHub && searchRequest.Url == "" {
 			log.Fatal("镜像仓库类型不为dockerHub的必须指定镜像仓库地址，例：-url http://username:password@repository.service.cloud.com:8444")
 		}
-		printRemoteImage(searchRequest)
+		if searchRequest.Name == "" && searchRequest.File == "" {
+			log.Fatal("镜像名称或镜像名称列表文件必需存在一个，若指定文件应用程序会逐行读取镜像名称然后获取该镜像最新版本")
+		}
+		if searchRequest.File != "" {
+			printLatestImage(searchRequest)
+		} else {
+			printRemoteImage(searchRequest)
+		}
 		return nil
 	},
 }
@@ -113,6 +127,34 @@ var releaseCommand = cli.Command{
 		releaseYaml(releaseRequest)
 		return nil
 	},
+}
+
+func printLatestImage(searchRequest *models.Search) {
+	f, err := os.Open(searchRequest.File)
+	if err != nil {
+		log.Fatal(err)
+	}
+	buf := bufio.NewReader(f)
+	for {
+		b, err := buf.ReadBytes('\n')
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			log.Fatal(err)
+		}
+		searchRequest.Name = strings.Replace(string(b), "\r\n", "", -1)
+		it, err := SearchImage(searchRequest)
+		if err != nil {
+			log.Fatal(err)
+		}
+		latestVersion := QueryReleaseLatestVersion(it, searchRequest.Version)
+		if latestVersion == "" {
+			fmt.Println(searchRequest.Name + "： 未查询到最新版本")
+			continue
+		}
+		fmt.Println(searchRequest.Name + ":" + latestVersion)
+	}
 }
 
 func printRemoteImage(searchRequest *models.Search) {

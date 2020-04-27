@@ -57,6 +57,7 @@
     - -url 镜像仓库管理页面地址 http://username:password@repository.xxx.com/
     - -name 要搜索的镜像名称
     - -v 指定过滤搜索tag版本
+    - -f 指定文件名称，搜索镜像最新版本列表，应用会逐行读取镜像名称进行查询
     
   - app release 生成release版本yaml文件
     - -t 镜像仓库类型 nexus/harbor/dockerHub
