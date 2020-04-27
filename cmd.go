@@ -190,7 +190,8 @@ func printLatestImage(searchRequest *models.Search) {
 			}
 			log.Fatal(err)
 		}
-		searchRequest.Name = strings.Replace(string(b), "\r\n", "", -1)
+		tmp1 := strings.Replace(string(b), "\n", "", -1)
+		searchRequest.Name = strings.Replace(tmp1, "\r", "", -1)
 		it, err := SearchImage(searchRequest)
 		if err != nil {
 			log.Fatal(err)
@@ -335,7 +336,7 @@ func SearchImage(searchRequest *models.Search) ([]*models.ImageTags, error) {
 
 // 计算最新版本
 func QueryReleaseLatestVersion(it []*models.ImageTags, version string) string {
-	log.Println("计算最新镜像版本...")
+	// log.Println("计算最新镜像版本...")
 	if len(it) == 0 {
 		return ""
 	}
