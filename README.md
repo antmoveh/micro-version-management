@@ -72,7 +72,7 @@
     - -url 必填，指定插件列表
     - -name  搜索指定插件
     - -v 搜索指定版本
-    
+    - -vv 返回插件版本号
     
 ##### 示例
 
@@ -81,4 +81,6 @@ app release -t nexus -url http://repository.xxx.com/ -f E:\\template -o E:\\rele
 reposiory.xx.com:8001/ -v v1.9 --prefix moebius/release
 
 app search -t nexus -url http://repository.xxx.com/ -v v1.9 -name moebius/release/website
+
+app plugin http://xxxx
 ```

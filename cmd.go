@@ -146,6 +146,10 @@ var pluginCommand = cli.Command{
 			Name:  "v",
 			Usage: "指定插件版本",
 		},
+		cli.StringFlag{
+			Name:  "vv",
+			Usage: "默认返回下载地址，有此参数则返回版本号",
+		},
 	},
 
 	Action: func(context *cli.Context) error {
@@ -154,6 +158,7 @@ var pluginCommand = cli.Command{
 			Url:     context.String("url"),
 			Name:    context.String("name"),
 			Version: context.String("v"),
+			Vv:      context.String("vv"),
 		}
 		printPluginDownloadUrl(searchRequest)
 		return nil
@@ -167,11 +172,19 @@ func printPluginDownloadUrl(searchRequest *models.PluginSearch) {
 	}
 	for _, pl := range p.Plugins {
 		if searchRequest.Name == "" {
-			downloadUrl := QueryPluginVersion(pl.Versions, searchRequest.Version)
-			fmt.Println(downloadUrl)
+			downloadUrl, vv := QueryPluginVersion(pl.Versions, searchRequest.Version)
+			if searchRequest.Vv != "" {
+				fmt.Println(vv)
+			} else {
+				fmt.Println(downloadUrl)
+			}
 		} else if searchRequest.Name == pl.Name {
-			downloadUrl := QueryPluginVersion(pl.Versions, searchRequest.Version)
-			fmt.Println(downloadUrl)
+			downloadUrl, vv := QueryPluginVersion(pl.Versions, searchRequest.Version)
+			if searchRequest.Vv != "" {
+				fmt.Println(vv)
+			} else {
+				fmt.Println(downloadUrl)
+			}
 		}
 	}
 }
@@ -358,16 +371,17 @@ func QueryReleaseLatestVersion(it []*models.ImageTags, version string) string {
 }
 
 // 计算最新的插件版本
-func QueryPluginVersion(it []*models.PluginVersion, version string) string {
+func QueryPluginVersion(it []*models.PluginVersion, version string) (string, string) {
 	if len(it) == 0 {
-		return ""
+		return "", ""
 	}
 	latestImageTag := ""
 	downloadUrl := ""
+	vv := ""
 	for _, t := range it {
 		if version != "latest" && version != "" {
 			if t.Version == version {
-				return t.DownloadUrl
+				return t.DownloadUrl, version
 			}
 		}
 		// 为了复用原先的计算最新版本逻辑，在此进行稍加变换
@@ -375,7 +389,8 @@ func QueryPluginVersion(it []*models.PluginVersion, version string) string {
 		latestImageTag = utils.VersionCompare(latestImageTag, disposeTag)
 		if latestImageTag == disposeTag {
 			downloadUrl = t.DownloadUrl
+			vv = t.Version
 		}
 	}
-	return downloadUrl
+	return downloadUrl, vv
 }

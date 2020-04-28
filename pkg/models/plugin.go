@@ -30,4 +30,5 @@ type PluginSearch struct {
 	Url     string // 插件地址
 	Name    string // 插件名称
 	Version string // 插件版本
+	Vv      string // 返回插件版本号
 }
